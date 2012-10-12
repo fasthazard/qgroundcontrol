@@ -96,141 +96,142 @@ namespace internals {
         }
         MtileLoadQueue.unlock();
 
-        if(task.HasValue())
+        if(task.HasValue()) {
             if(loaderLimit.tryAcquire(1,OPMaps::Instance()->Timeout))
             {
-            MtileToload.lock();
-            --tilesToload;
-            MtileToload.unlock();
+                MtileToload.lock();
+                --tilesToload;
+                MtileToload.unlock();
 #ifdef DEBUG_CORE
-            qDebug()<<"loadLimit semaphore aquired "<<loaderLimit.available()<<" ID="<<debug<<" TASK="<<task.Pos.ToString()<<" "<<task.Zoom;
+                qDebug()<<"loadLimit semaphore aquired "<<loaderLimit.available()<<" ID="<<debug<<" TASK="<<task.Pos.ToString()<<" "<<task.Zoom;
 #endif //DEBUG_CORE
 
-            {
-
-#ifdef DEBUG_CORE
-                qDebug()<<"task as value, begining get"<<" ID="<<debug;;
-#endif //DEBUG_CORE
                 {
-                    Tile* m = Matrix.TileAt(task.Pos);
 
-                    if(m==0 || m->Overlays.count() == 0)
-                    {
 #ifdef DEBUG_CORE
-                        qDebug()<<"Fill empty TileMatrix: " + task.ToString()<<" ID="<<debug;;
+                    qDebug()<<"task as value, begining get"<<" ID="<<debug;;
+#endif //DEBUG_CORE
+                    {
+                        Tile* m = Matrix.TileAt(task.Pos);
+
+                        if(m==0 || m->Overlays.count() == 0)
+                        {
+#ifdef DEBUG_CORE
+                            qDebug()<<"Fill empty TileMatrix: " + task.ToString()<<" ID="<<debug;;
 #endif //DEBUG_CORE
 
-                        Tile* t = new Tile(task.Zoom, task.Pos);
-                        QVector<MapType::Types> layers= OPMaps::Instance()->GetAllLayersOfType(GetMapType());
+                            Tile* t = new Tile(task.Zoom, task.Pos);
+                            QVector<MapType::Types> layers= OPMaps::Instance()->GetAllLayersOfType(GetMapType());
 
-                        foreach(MapType::Types tl,layers)
-                        {
-                            int retry = 0;
-                            do
+                            foreach(MapType::Types tl,layers)
                             {
-                                QByteArray img;
+                                int retry = 0;
+                                do
+                                {
+                                    QByteArray img;
 
-                                // tile number inversion(BottomLeft -> TopLeft) for pergo maps
-                                if(tl == MapType::PergoTurkeyMap)
-                                {
-                                    img = OPMaps::Instance()->GetImageFrom(tl, Point(task.Pos.X(), maxOfTiles.Height() - task.Pos.Y()), task.Zoom);
-                                }
-                                else // ok
-                                {
-#ifdef DEBUG_CORE
-                                    qDebug()<<"start getting image"<<" ID="<<debug;
-#endif //DEBUG_CORE
-                                    img = OPMaps::Instance()->GetImageFrom(tl, task.Pos, task.Zoom);
-#ifdef DEBUG_CORE
-                                    qDebug()<<"Core::run:gotimage size:"<<img.count()<<" ID="<<debug<<" time="<<t.elapsed();
-#endif //DEBUG_CORE
-                                }
-
-                                if(img.length()!=0)
-                                {
-                                    Moverlays.lock();
+                                    // tile number inversion(BottomLeft -> TopLeft) for pergo maps
+                                    if(tl == MapType::PergoTurkeyMap)
                                     {
-                                        t->Overlays.append(img);
-#ifdef DEBUG_CORE
-                                        qDebug()<<"Core::run append img:"<<img.length()<<" to tile:"<<t->GetPos().ToString()<<" now has "<<t->Overlays.count()<<" overlays"<<" ID="<<debug;
-#endif //DEBUG_CORE
-
+                                        img = OPMaps::Instance()->GetImageFrom(tl, Point(task.Pos.X(), maxOfTiles.Height() - task.Pos.Y()), task.Zoom);
                                     }
-                                    Moverlays.unlock();
-
-                                    break;
-                                }
-                                else if(OPMaps::Instance()->RetryLoadTile > 0)
-                                {
-#ifdef DEBUG_CORE
-                                    qDebug()<<"ProcessLoadTask: " << task.ToString()<< " -> empty tile, retry " << retry<<" ID="<<debug;;
-#endif //DEBUG_CORE
+                                    else // ok
                                     {
-                                        QWaitCondition wait;
-                                        QMutex m;
-                                        m.lock();
-                                        wait.wait(&m,500);
+#ifdef DEBUG_CORE
+                                        qDebug()<<"start getting image"<<" ID="<<debug;
+#endif //DEBUG_CORE
+                                        img = OPMaps::Instance()->GetImageFrom(tl, task.Pos, task.Zoom);
+#ifdef DEBUG_CORE
+                                        qDebug()<<"Core::run:gotimage size:"<<img.count()<<" ID="<<debug<<" time="<<t.elapsed();
+#endif //DEBUG_CORE
+                                    }
+
+                                    if(img.length()!=0)
+                                    {
+                                        Moverlays.lock();
+                                        {
+                                            t->Overlays.append(img);
+#ifdef DEBUG_CORE
+                                            qDebug()<<"Core::run append img:"<<img.length()<<" to tile:"<<t->GetPos().ToString()<<" now has "<<t->Overlays.count()<<" overlays"<<" ID="<<debug;
+#endif //DEBUG_CORE
+
+                                        }
+                                        Moverlays.unlock();
+
+                                        break;
+                                    }
+                                    else if(OPMaps::Instance()->RetryLoadTile > 0)
+                                    {
+#ifdef DEBUG_CORE
+                                        qDebug()<<"ProcessLoadTask: " << task.ToString()<< " -> empty tile, retry " << retry<<" ID="<<debug;;
+#endif //DEBUG_CORE
+                                        {
+                                            QWaitCondition wait;
+                                            QMutex m;
+                                            m.lock();
+                                            wait.wait(&m,500);
+                                        }
                                     }
                                 }
+                                while(++retry < OPMaps::Instance()->RetryLoadTile);
                             }
-                            while(++retry < OPMaps::Instance()->RetryLoadTile);
-                        }
 
-                        if(t->Overlays.count() > 0)
-                        {
-                            Matrix.SetTileAt(task.Pos,t);
-                            emit OnNeedInvalidation();
+                            if(t->Overlays.count() > 0)
+                            {
+                                Matrix.SetTileAt(task.Pos,t);
+                                emit OnNeedInvalidation();
 
 #ifdef DEBUG_CORE
-                            qDebug()<<"Core::run add tile "<<t->GetPos().ToString()<<" to matrix index "<<task.Pos.ToString()<<" ID="<<debug;
-                            qDebug()<<"Core::run matrix index "<<task.Pos.ToString()<<" as tile with "<<Matrix.TileAt(task.Pos)->Overlays.count()<<" ID="<<debug;
+                                qDebug()<<"Core::run add tile "<<t->GetPos().ToString()<<" to matrix index "<<task.Pos.ToString()<<" ID="<<debug;
+                                qDebug()<<"Core::run matrix index "<<task.Pos.ToString()<<" as tile with "<<Matrix.TileAt(task.Pos)->Overlays.count()<<" ID="<<debug;
 #endif //DEBUG_CORE
-                        }
-                        else
-                        {
-                            // emit OnTilesStillToLoad(tilesToload);
+                            }
+                            else
+                            {
+                                // emit OnTilesStillToLoad(tilesToload);
 
-                            delete t;
-                            t = 0;
-                            emit OnNeedInvalidation();
-                        }
+                                delete t;
+                                t = 0;
+                                emit OnNeedInvalidation();
+                            }
 
-                        // layers = null;
+                            // layers = null;
+                        }
                     }
-                }
 
 
-                {
-                    // last buddy cleans stuff ;}
-                    if(last)
                     {
-                        OPMaps::Instance()->kiberCacheLock.lockForWrite();
-                        OPMaps::Instance()->TilesInMemory.RemoveMemoryOverload();
-                        OPMaps::Instance()->kiberCacheLock.unlock();
-
-                        MtileDrawingList.lock();
+                        // last buddy cleans stuff ;}
+                        if(last)
                         {
-                            Matrix.ClearPointsNotIn(tileDrawingList);
+                            OPMaps::Instance()->kiberCacheLock.lockForWrite();
+                            OPMaps::Instance()->TilesInMemory.RemoveMemoryOverload();
+                            OPMaps::Instance()->kiberCacheLock.unlock();
+
+                            MtileDrawingList.lock();
+                            {
+                                Matrix.ClearPointsNotIn(tileDrawingList);
+                            }
+                            MtileDrawingList.unlock();
+
+
+                            emit OnTileLoadComplete();
+
+
+                            emit OnNeedInvalidation();
+
                         }
-                        MtileDrawingList.unlock();
-
-
-                        emit OnTileLoadComplete();
-
-
-                        emit OnNeedInvalidation();
-
                     }
+
+
+
                 }
-
-
-
-            }
 #ifdef DEBUG_CORE
-            qDebug()<<"loaderLimit release:"+loaderLimit.available()<<" ID="<<debug;
+                qDebug()<<"loaderLimit release:"+loaderLimit.available()<<" ID="<<debug;
 #endif
-            emit OnTilesStillToLoad(tilesToload<0? 0:tilesToload);
-            loaderLimit.release();
+                emit OnTilesStillToLoad(tilesToload<0? 0:tilesToload);
+                loaderLimit.release();
+            }
         }
         MrunningThreads.lock();
         --runningThreads;

@@ -39,7 +39,7 @@ namespace core {
     OPMaps::OPMaps():RetryLoadTile(2),useMemoryCache(true)
     {
         accessmode=AccessMode::ServerAndCache;
-        Language=LanguageType::PortuguesePortugal;
+        Language=LanguageType::English;
         LanguageStr=LanguageType().toShortString(Language);
         Cache::Instance();
 
@@ -107,7 +107,7 @@ namespace core {
                     return ret;
                 }
             }
-            if(accessmode!=AccessMode::CacheOnly)
+            if(ret.isEmpty() && accessmode!=AccessMode::CacheOnly)
             {
                 QEventLoop q;
                 QNetworkReply *reply;

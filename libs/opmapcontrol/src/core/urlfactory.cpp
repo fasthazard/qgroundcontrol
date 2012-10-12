@@ -45,7 +45,7 @@ namespace core {
         /// </summary>
         UserAgent = "Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.1.7) Gecko/20091221 Firefox/3.5.7";
 
-        Timeout = 5 * 1000;
+        Timeout = 500;
         CorrectGoogleVersions=true;
         isCorrectedGoogleVersions = false;
         UseGeocoderCache=true;
