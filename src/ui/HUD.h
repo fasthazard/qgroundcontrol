@@ -74,7 +74,7 @@ public slots:
     void updateThrust(UASInterface*, double);
     void updateLocalPosition(UASInterface*,double,double,double,quint64);
     void updateGlobalPosition(UASInterface*,double,double,double,quint64);
-    void updateSpeed(UASInterface*,double,double,double,quint64);
+    void updateAirspeed(UASInterface * uas, double ias, quint64 time);
     void updateState(UASInterface*,QString);
     void updateMode(int id,QString mode, QString description);
     void updateLoad(UASInterface*, double);

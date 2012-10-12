@@ -678,7 +678,8 @@ void UAS::receiveMessage(LinkInterface* link, mavlink_message_t message)
             }
 
             emit altitudeChanged(uasId, hud.alt);
-            emit speedChanged(this, hud.airspeed, 0.0f, hud.climb, time);
+            //emit speedChanged(this, hud.airspeed, 0.0f, hud.climb, time);
+            emit airspeedChanged(this, hud.airspeed, time);
         }
             break;
         case MAVLINK_MSG_ID_LOCAL_POSITION_NED:

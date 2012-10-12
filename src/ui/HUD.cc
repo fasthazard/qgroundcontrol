@@ -287,7 +287,7 @@ void HUD::setActiveUAS(UASInterface* uas)
 
         connect(uas, SIGNAL(localPositionChanged(UASInterface*,double,double,double,quint64)), this, SLOT(updateLocalPosition(UASInterface*,double,double,double,quint64)));
         connect(uas, SIGNAL(globalPositionChanged(UASInterface*,double,double,double,quint64)), this, SLOT(updateGlobalPosition(UASInterface*,double,double,double,quint64)));
-        connect(uas, SIGNAL(speedChanged(UASInterface*,double,double,double,quint64)), this, SLOT(updateSpeed(UASInterface*,double,double,double,quint64)));
+        connect(uas, SIGNAL(airspeedChanged(UASInterface*,double,quint64)), this, SLOT(updateAirspeed(UASInterface*,double,quint64)));
         connect(uas, SIGNAL(waypointSelected(int,int)), this, SLOT(selectWaypoint(int, int)));
 
         // Try to connect the image link
@@ -374,16 +374,11 @@ void HUD::updateGlobalPosition(UASInterface* uas,double lat, double lon, double 
     this->alt = altitude;
 }
 
-void HUD::updateSpeed(UASInterface* uas,double x,double y,double z,quint64 timestamp)
+void HUD::updateAirspeed(UASInterface * uas, double ias, quint64 time)
 {
     Q_UNUSED(uas);
-    Q_UNUSED(timestamp);
-    this->xSpeed = x;
-    this->ySpeed = y;
-    this->zSpeed = z;
-    double newTotalSpeed = sqrt(xSpeed*xSpeed + ySpeed*ySpeed + zSpeed*zSpeed);
-    totalAcc = (newTotalSpeed - totalSpeed) / ((double)(lastSpeedUpdate - timestamp)/1000.0);
-    totalSpeed = newTotalSpeed;
+    Q_UNUSED(time);
+    totalSpeed = ias;
 }
 
 /**

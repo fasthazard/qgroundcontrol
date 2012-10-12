@@ -471,6 +471,7 @@ signals:
     /** @brief Update the status of one satellite used for localization */
     void gpsSatelliteStatusChanged(int uasid, int satid, float azimuth, float direction, float snr, bool used);
     void speedChanged(UASInterface*, double x, double y, double z, quint64 usec);
+    void airspeedChanged(UASInterface *, double ias, quint64 usec);
     void imageStarted(int imgid, int width, int height, int depth, int channels);
     void imageDataReceived(int imgid, const unsigned char* imageData, int length, int startIndex);
     /** @brief Emit the new system type */
