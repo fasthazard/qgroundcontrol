@@ -48,7 +48,13 @@ void QGCMapWidget::showEvent(QShowEvent* event)
     {
         internals::PointLatLng pos_lat_lon = internals::PointLatLng(0, 0);
 
-        SetMouseWheelZoomType(internals::MouseWheelZoomType::MousePositionWithoutCenter);	    // set how the mouse wheel zoom functions
+        //If the follow box is unchecked, set the mouse behavior to zoom on the mouse location
+        //  if Follow is checked, the behavior will be overridden only when good UAV data arrives
+        //  resetting back to normal state needs to happen in the main show loop in case no data arrives.
+        if(!followUAVEnabled)
+        {
+            SetMouseWheelZoomType(internals::MouseWheelZoomType::MousePositionWithoutCenter);
+        }
         SetFollowMouse(true);				    // we want a contiuous mouse position reading
 
         SetShowHome(true);					    // display the HOME position on the map
@@ -247,7 +253,11 @@ void QGCMapWidget::updateGlobalPosition(UASInterface* uas, double lat, double lo
         internals::PointLatLng pos_lat_lon = internals::PointLatLng(lat, lon);
         uav->SetUAVPos(pos_lat_lon, alt);
         // Follow status
-        if (followUAVEnabled && uas->getUASID() == followUAVID) SetCurrentPosition(pos_lat_lon);
+        if (followUAVEnabled && uas->getUASID() == followUAVID)
+        {
+            SetMouseWheelZoomType(internals::MouseWheelZoomType::ViewCenter);
+            SetCurrentPosition(pos_lat_lon);
+        }
         // Convert from radians to degrees and apply
         uav->SetUAVHeading((uas->getYaw()/M_PI)*180.0f);
     }
@@ -278,7 +288,11 @@ void QGCMapWidget::updateGlobalPosition()
         internals::PointLatLng pos_lat_lon = internals::PointLatLng(system->getLatitude(), system->getLongitude());
         uav->SetUAVPos(pos_lat_lon, system->getAltitude());
         // Follow status
-        if (followUAVEnabled && system->getUASID() == followUAVID) SetCurrentPosition(pos_lat_lon);
+        if (followUAVEnabled && system->getUASID() == followUAVID)
+        {
+            SetMouseWheelZoomType(internals::MouseWheelZoomType::ViewCenter);
+            SetCurrentPosition(pos_lat_lon);
+        }
         // Convert from radians to degrees and apply
         uav->SetUAVHeading((system->getYaw()/M_PI)*180.0f);
     }
@@ -306,7 +320,11 @@ void QGCMapWidget::updateLocalPosition()
         internals::PointLatLng pos_lat_lon = internals::PointLatLng(system->getLatitude(), system->getLongitude());
         uav->SetUAVPos(pos_lat_lon, system->getAltitude());
         // Follow status
-        if (followUAVEnabled && system->getUASID() == followUAVID) SetCurrentPosition(pos_lat_lon);
+        if (followUAVEnabled && system->getUASID() == followUAVID)
+        {
+            SetMouseWheelZoomType(internals::MouseWheelZoomType::ViewCenter);
+            SetCurrentPosition(pos_lat_lon);
+        }
         // Convert from radians to degrees and apply
         uav->SetUAVHeading((system->getYaw()/M_PI)*180.0f);
     }
